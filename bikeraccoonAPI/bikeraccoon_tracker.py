@@ -112,7 +112,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
                 update_trips(system, session)
 
                 if get_system_time(system).hour == station_check_hour: # check stations at 4am local time
-                    logger.info(f"***{system['name']} updating stations")
+                    logger.info(f"***{system.name} updating stations")
                     update_stations(system, session)
             
         session.close()
