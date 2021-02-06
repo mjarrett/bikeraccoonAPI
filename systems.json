@@ -1,0 +1,31 @@
+{
+    "bixi_montreal": {
+    "name": "bixi_montreal",
+	"url": "https://api-core.bixi.com/gbfs/gbfs.json",
+	"tz": "America/Montreal"
+    },
+
+    "mobi_vancouver": {
+    "name": "mobi_vancouver",
+	"url": "https://vancouver-gbfs.smoove.pro/gbfs/gbfs.json",
+	"tz": "America/Vancouver"
+    },
+
+    "bike_share_toronto": {
+    "name": "bike_share_toronto",
+	"url": "https://tor.publicbikesystem.net/ube/gbfs/v1/",
+	"tz": "America/Toronto"
+    },
+
+        "sobi_hamilton": {
+    "name": "sobi_hamilton",
+	"url": "https://hamilton.socialbicycles.com/opendata/gbfs.json",
+	"tz": "America/Toronto"
+	},
+
+        "hopr_vancouver": {
+    "name": "hopr_vancouver",
+	"url": "https://gbfs.hopr.city/api/gbfs/22/",
+	"tz": "America/Vancouver"
+	}
+}
