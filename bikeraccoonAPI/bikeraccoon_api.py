@@ -64,7 +64,7 @@ def get_stations():
     if sys_name is None:
         return # Add a 404
     qry =  session.query(Station).join(System).filter(System.name==sys_name,Station.station_id!='free_bikes').all()
-    res = json.dumps([x.as_dict() for x in qry], default=str, indent=4)
+    res = [x.as_dict() for x in qry]
 
     return json_response(res)
 
