@@ -9,6 +9,7 @@ setup(name='bikeraccoonAPI',
       author_email='msjarrett@gmail.com',
       url='raccoon.bike',
       packages=['bikeraccoonAPI'],
+      scripts=[],
       install_requires = [
         'daemoner @ https://api.github.com/repos/mjarrett/daemoner/tarball/',
         'twitterer @  https://api.github.com/repos/mjarrett/twitterer/tarball/',
