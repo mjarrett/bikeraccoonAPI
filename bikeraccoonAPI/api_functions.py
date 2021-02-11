@@ -110,7 +110,6 @@ def json_response(r):
 
 def _dict_groupby(res, frequency):
     
-
     if frequency == 'h':
         key = None
     if frequency == 'd':
@@ -124,7 +123,10 @@ def _dict_groupby(res, frequency):
         # This is just a fancy groupby date
         res = [{'datetime':k,'trips':[(x['trips'],x['returns']) for x in group]} for k, group 
                  in itertools.groupby(res, key=key)]
-        res = [{'datetime':x['datetime'], 'trips':sum(y[0] for y in x['trips']),'returns':sum(y[1] for y in x['trips'])} for x in res]
+        res = [{'datetime':x['datetime'], 
+                'trips':sum(y[0] for y in x['trips'] if y[0] is not None),
+                'returns':sum(y[1] for y in x['trips'] if y[1] is not None)} 
+               for x in res]
     return res
  
     

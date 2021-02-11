@@ -18,7 +18,6 @@ from flask_sqlalchemy import SQLAlchemy
 from .models import System, Station, Measurement
 from .api_functions import *
 
-print(__file__)
 app = Flask(__name__)
 CORS(app) #Prevents CORS errors 
 
