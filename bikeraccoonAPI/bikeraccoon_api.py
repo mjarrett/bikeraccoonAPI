@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from flask_cors import CORS
-from flask import Flask, request, make_response, send_from_directory
+from flask import Flask, request, make_response, send_from_directory,render_template
 
 import json
 import hashlib
@@ -18,7 +18,7 @@ from flask_sqlalchemy import SQLAlchemy
 from .models import System, Station, Measurement
 from .api_functions import *
 
-
+print(__file__)
 app = Flask(__name__)
 CORS(app) #Prevents CORS errors 
 
@@ -36,9 +36,14 @@ def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
                           'favicon.ico',mimetype='image/vnd.microsoft.icon')    
 
+
 @app.route('/')
 def default():
-    return "Default landing page"
+    return "This is the Flask API landing page... for now"
+
+@app.route('/tests')
+def tests():
+    return render_template("tests.html")
 
 @app.route('/systems', methods=['GET'])
 def get_systems():
