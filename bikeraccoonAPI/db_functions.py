@@ -19,7 +19,7 @@ def make_raw_tables(system, engine):
     metadata = MetaData()
     
 
-    stations_raw = Table(f"{system['name']}_stations_raw", metadata,
+    stations_raw = Table(f"{system.name}_stations_raw", metadata,
         Column('datetime', DateTime),
         Column('num_bikes_available', Integer),
         Column('num_docks_available', Integer),
@@ -27,13 +27,13 @@ def make_raw_tables(system, engine):
         Column('station_id', String)
         )
 
-    bikes_raw = Table(f"{system['name']}_bikes_raw", metadata,
+    bikes_raw = Table(f"{system.name}_bikes_raw", metadata,
          Column('datetime', DateTime),
          Column('bike_id', String),
          Column('lat', Float),
          Column('lon',Float)
          )
-    logger.debug(f"{system['name']} - create raw table")
+    logger.debug(f"{system.name} - create raw table")
     metadata.create_all(engine)  # Doesn't overwrite tables if exist
     
     
@@ -62,27 +62,30 @@ def update_free_bikes_raw(system, engine):
     
 def map_station_id_to_station(station_id,system,session):
     """
-    Given a station_id string and a system dict, return a station ORM object
+    Given a station_id string and a system obj, return a station ORM object
     with the latest 'created_by' date for that station_id and system
     """
     
-    qry = session.query(Station).filter_by(system=system)
+    qry = session.query(Station).filter(System.name==system.name)
     qry = qry.filter_by(station_id=station_id).order_by(Station.created_date.desc())
     
     return qry.first()
     
-def update_trips(system, session):
+def update_trips(system, session, engine_raw):
+    
+    """
+    Pulls raw data from raw db, computes trips, saves trip data to main db via session
+    """
+    
 
     logger.info(f"Updating {system.name} tables")
 
-    ## Retrieve engine for non-ORM queries
-    engine = session.get_bind()
 
     ## Compute hourly station trips, append to trips table
-    ddf = pd.read_sql(f"select * from {system.name}_stations_raw",engine, parse_dates='datetime')   
+    ddf = pd.read_sql(f"select * from {system.name}_stations_raw",engine_raw, parse_dates='datetime')   
             
     ## Compute hourly free bike trips, append to trips table
-    bdf = pd.read_sql(f"select * from {system.name}_bikes_raw",engine, parse_dates='datetime')  
+    bdf = pd.read_sql(f"select * from {system.name}_bikes_raw",engine_raw, parse_dates='datetime')  
     
     thdf = pd.concat([make_free_bike_trips(bdf), make_station_trips(ddf)], sort=True)
         
@@ -119,14 +122,18 @@ def update_trips(system, session):
 
     
     # Drop records in raw tables except for most recent query
-    trim_raw(f"{system.name}_stations_raw", engine)
-    trim_raw(f"{system.name}_bikes_raw", engine)
+    trim_raw(f"{system.name}_stations_raw", engine_raw)
+    trim_raw(f"{system.name}_bikes_raw", engine_raw)
     
     
     
 
-def trim_raw(tablename, engine):
-    m = MetaData(bind=engine, reflect=True)  # Reflect pulls in tables that sqla doesn't know about
+def trim_raw(tablename, engine_raw):
+    """
+    Only keep the latest query, drop older queries
+    """
+    
+    m = MetaData(bind=engine_raw, reflect=True)  # Reflect pulls in tables that sqla doesn't know about
    
     try:
         table = m.tables[tablename]

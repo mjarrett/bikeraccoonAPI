@@ -38,7 +38,8 @@ def load_systems(systems_file):
 
 
 
-def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
+def tracker(systems_file='systems.json',db_file='bikeraccoon.db', 
+            db_file_raw='bikeraccoon-raw.db',
             log_file=None, interval=20, station_check_hour=4):
     
     ## SETUP LOGGING
@@ -60,10 +61,11 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
     ## Setup 
     ddf = bdf = pd.DataFrame()
     last_update = dt.datetime.now()
-    update_delta = dt.timedelta(minutes=20)
+    update_delta = dt.timedelta(minutes=interval)
     
-    engine = create_engine(f'sqlite:///{db_file}', echo=False)  # Turn loggin off when it's more stable
-    
+    engine = create_engine(f'sqlite:///{db_file}', echo=False)  
+    # This is for the raw tracking to minimize access to the main db
+    engine_raw = create_engine(f'sqlite:///{db_file_raw}', echo=False)  
     
     systems = load_systems(systems_file)
    
@@ -77,7 +79,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
     
     for system in systems.values():
         activate_system(system, session)
-        make_raw_tables(system, engine)
+        
         
     # This updates the metadata for each system
     update_systems(session)    
@@ -85,6 +87,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
     # Do an initial station update on startup
     for system in session.query(System).filter(System.is_tracking==True):
         print(system)
+        make_raw_tables(system, engine_raw)
         update_stations(system, session)
 
     session.close()
@@ -98,9 +101,9 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
         for system in session.query(System).filter(System.is_tracking==True):
            
             logger.info(f"***{system.name} - querying station info")
-            update_stations_raw(system, engine)
+            update_stations_raw(system, engine_raw)
 
-            update_free_bikes_raw(system, engine)
+            update_free_bikes_raw(system, engine_raw)
         
 
         logger.debug(f"Next DB update: {last_update + update_delta}")
@@ -109,7 +112,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
 
             for system in session.query(System).filter(System.is_tracking==True):
                 
-                update_trips(system, session)
+                update_trips(system, session, engine_raw)
 
                 if get_system_time(system).hour == station_check_hour: # check stations at 4am local time
                     logger.info(f"***{system.name} updating stations")
