@@ -39,8 +39,8 @@ def load_systems(systems_file):
 
 
 def tracker(systems_file='systems.json',db_file='bikeraccoon.db', 
-            db_file_raw='bikeraccoon-raw.db',
-            log_file=None, interval=20, station_check_hour=4):
+            db_file_raw='bikeraccoon-raw.db',log_file=None,
+            update_interval=20, query_interval=20, station_check_hour=4):
     
     ## SETUP LOGGING
     logger = logging.getLogger("Rotating Log")
@@ -61,7 +61,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
     ## Setup 
     ddf = bdf = pd.DataFrame()
     last_update = dt.datetime.now()
-    update_delta = dt.timedelta(minutes=interval)
+    update_delta = dt.timedelta(minutes=update_interval)
     
     engine = create_engine(f'sqlite:///{db_file}', echo=False)  
     # This is for the raw tracking to minimize access to the main db
@@ -121,7 +121,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
         session.close()
             
         logger.info(f"end: {dt.datetime.now()}")
-        time.sleep(interval)
+        time.sleep(query_interval)
 
 
 
