@@ -122,15 +122,6 @@ def _dict_groupby(res, frequency):
     if key is not None:
         # This is just a fancy groupby date
         
-        # First, gather each field for each grouped date
-        res = [{'datetime':k,'data':[(x['trips'],x['returns'],
-                                      x['num_bikes_available'],
-                                      x['num_docks_available'],
-                                      x['station_id'],x['station']) 
-                                     for x in group]} 
-                 for k, group 
-                 in itertools.groupby(res, key=key)]
-        
         # This is special case function to calc mean of a generator 
         def _mean(x,n):
             s = sum(y[n] for y in x['data'] if y[n] is not None)
@@ -138,17 +129,45 @@ def _dict_groupby(res, frequency):
             if l == 0:
                 return 0
             return int(s/l)
-                    
-        # Finally, aggregate each field as appropriate
-        res = [{'datetime':x['datetime'], 
-                'trips':sum(y[0] for y in x['data'] if y[0] is not None),
-                'returns':sum(y[1] for y in x['data'] if y[1] is not None),
-                'num_bikes_available':_mean(x,2),
-                'num_docks_available':_mean(x,3),
-                'station_id':x['data'][0][4],
-                'station':x['data'][0][5]
-               } 
-               for x in res]
+        
+        if 'num_bikes_available' in res[0]: 
+            # First, gather each field for each grouped date
+            res = [{'datetime':k,'data':[(x['trips'],x['returns'],
+                                          x['num_bikes_available'],
+                                          x['num_docks_available'],
+                                          x['station_id'],x['station']) 
+                                         for x in group]} 
+                     for k, group 
+                     in itertools.groupby(res, key=key)]
+
+
+
+            # Finally, aggregate each field as appropriate. 
+            res = [{'datetime':x['datetime'], 
+                    'trips':sum(y[0] for y in x['data'] if y[0] is not None),
+                    'returns':sum(y[1] for y in x['data'] if y[1] is not None),
+                    'num_bikes_available':_mean(x,2),
+                    'num_docks_available':_mean(x,3),
+                    'station_id':x['data'][0][4],
+                    'station':x['data'][0][5]
+                   } 
+                   for x in res]
+            
+        else:
+            # this is the simple case where we're not breaking down by station
+            res = [{'datetime':k,'data':[(x['trips'],x['returns']) 
+                                         for x in group]} 
+                     for k, group 
+                     in itertools.groupby(res, key=key)]
+
+
+
+            # Finally, aggregate each field as appropriate. 
+            res = [{'datetime':x['datetime'], 
+                    'trips':sum(y[0] for y in x['data'] if y[0] is not None),
+                    'returns':sum(y[1] for y in x['data'] if y[1] is not None)
+                   } 
+                   for x in res]
     return res
  
     
