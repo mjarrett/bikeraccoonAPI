@@ -110,6 +110,9 @@ def json_response(r):
 
 def _dict_groupby(res, frequency):
     
+    if len(res) == 0:
+        return res
+    
     if frequency == 'h':
         key = None
     if frequency == 'd':
