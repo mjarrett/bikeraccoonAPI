@@ -90,7 +90,7 @@ def get_system_trips(session, t1,t2, sys_name, frequency,tz):
     res2 =  [{'datetime':to_local_time(time,tz),'trips':trips,'returns':returns} for time,trips,returns in res2]
     for r in res:
         r['datetime'] = trim_datetime(r['datetime'],frequency)
-    res2 = _dict_groupby(res2,frequency)
+    res2 = _dict_groupby(res,key_fields,agg_key)
 
     # Add free bikes to main response
     for r in res:
