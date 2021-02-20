@@ -24,9 +24,13 @@ def get_station_trips(session, t1,t2,sys_name,station_id,frequency,tz):
     res = [x.as_dict() for x in qry.all()]
     for r in res:
         r['datetime'] = to_local_time(r['datetime'],tz)
-    res = _dict_groupby(res,frequency)
-    return json_response(res)   
+        r['datetime'] = trim_datetime(r['datetime'],frequency)
+        
+    key_fields = ['datetime']
 
+    agg_key = {'trips':_sum, 'returns':_sum, 'num_bikes_available': _mean, 'num_docks_available':_mean}
+    res = _dict_groupby(res,key_fields,agg_key)
+    return json_response(res)   
 
 def get_all_stations_trips(session, t1,t2,sys_name,frequency,tz):
     qry = session.query(Measurement)
@@ -37,9 +41,14 @@ def get_all_stations_trips(session, t1,t2,sys_name,frequency,tz):
     res = [x.as_dict() for x in qry.all()]
     for r in res:
         r['datetime'] = to_local_time(r['datetime'],tz)
-    res = _dict_groupby(res,frequency)
-    return json_response(res)    
+        r['datetime'] = trim_datetime(r['datetime'],frequency)
     
+    key_fields = ['datetime','station_id']
+
+    agg_key = {'trips':_sum, 'returns':_sum, 'num_bikes_available': _mean, 'num_docks_available':_mean, 'station':_first}
+    res = _dict_groupby(res,key_fields,agg_key)
+    
+    return json_response(res)    
     
     
     
@@ -55,7 +64,13 @@ def get_system_trips(session, t1,t2, sys_name, frequency,tz):
     qry = qry.group_by(Measurement.datetime)
 
     res =  [{'datetime':to_local_time(time,tz),'trips':trips,'returns':returns} for time,trips,returns in qry.all()]
-    res = _dict_groupby(res,frequency)
+    for r in res:
+        r['datetime'] = trim_datetime(r['datetime'],frequency)
+        
+    key_fields = ['datetime']
+    agg_key = {'trips':_sum, 'returns':_sum, 'num_bikes_available': _mean, 'num_docks_available':_mean,
+          'station_id': _first, 'station':_first}
+    res = _dict_groupby(res,key_fields,agg_key)
     res = [ {'datetime':x['datetime'], 'station trips':x['trips']} for x in res] # Don't need returns for the whole system
 
     # Then query trips from free bikes
@@ -73,6 +88,8 @@ def get_system_trips(session, t1,t2, sys_name, frequency,tz):
         return json_response(res)
 
     res2 =  [{'datetime':to_local_time(time,tz),'trips':trips,'returns':returns} for time,trips,returns in res2]
+    for r in res:
+        r['datetime'] = trim_datetime(r['datetime'],frequency)
     res2 = _dict_groupby(res2,frequency)
 
     # Add free bikes to main response
@@ -83,8 +100,7 @@ def get_system_trips(session, t1,t2, sys_name, frequency,tz):
             r['free bike trips'] = r['free bike trips'][0]['trips']
         else:
             r['free bike trips'] = 0
-    res = json_response(res)
-    return res
+    return  json_response(res)
 
 
 
@@ -108,71 +124,54 @@ def json_response(r):
     
     res.mimetype = "text/plain"
 
-def _dict_groupby(res, frequency):
+def _first(x):
+
+    return x[0]
+
+def _sum(x):
+    return sum(y for y in x if y is not None)
+
+def _mean(x):
+    s = sum(y for y in x if y is not None)
+    l = len(x)
+    if l == 0:
+        return 0
+    return int(s/l)
     
-    if len(res) == 0:
-        return res
     
-    if frequency == 'h':
-        key = None
-    if frequency == 'd':
-        key = lambda x: x['datetime'].replace(hour=0)
-    if frequency == 'm':
-        key = lambda x: x['datetime'].replace(hour=0, day=1)
-    if frequency == 'y':
-        key = lambda x: x['datetime'].replace(hour=0, day=1, month=1)
+def _dict_groupby(res, key_fields, agg_key):
 
-    if key is not None:
-        # This is just a fancy groupby date
-        
-        # This is special case function to calc mean of a generator 
-        def _mean(x,n):
-            s = sum(y[n] for y in x['data'] if y[n] is not None)
-            l = len(list(y[n] for y in x['data'] if y[n] is not None))
-            if l == 0:
-                return 0
-            return int(s/l)
-        
-        if 'num_bikes_available' in res[0]: 
-            # First, gather each field for each grouped date
-            res = [{'datetime':k,'data':[(x['trips'],x['returns'],
-                                          x['num_bikes_available'],
-                                          x['num_docks_available'],
-                                          x['station_id'],x['station']) 
-                                         for x in group]} 
-                     for k, group 
-                     in itertools.groupby(res, key=key)]
+    key = lambda x: [x[field] for field in key_fields]
+
+
+    # First, gather each field for each grouped date
+    res = [{'key':k,'data':[{y:x[y] for y in x.keys() if y not in key_fields} 
+                                 for x in group]} 
+             for k, group 
+             in itertools.groupby(res, key=key)]
 
 
 
-            # Finally, aggregate each field as appropriate. 
-            res = [{'datetime':x['datetime'], 
-                    'trips':sum(y[0] for y in x['data'] if y[0] is not None),
-                    'returns':sum(y[1] for y in x['data'] if y[1] is not None),
-                    'num_bikes_available':_mean(x,2),
-                    'num_docks_available':_mean(x,3),
-                    'station_id':x['data'][0][4],
-                    'station':x['data'][0][5]
-                   } 
-                   for x in res]
-            
-        else:
-            # this is the simple case where we're not breaking down by station
-            res = [{'datetime':k,'data':[(x['trips'],x['returns']) 
-                                         for x in group]} 
-                     for k, group 
-                     in itertools.groupby(res, key=key)]
+    def agg(r):
+        return {field:agg_key[field]([y[field] for y in r['data']])  for field in agg_key.keys() if field in r['data'][0].keys()}
+
+    def agg_keys(r):
+        return {field:r['key'][i] for i,field in enumerate(key_fields)}
 
 
-
-            # Finally, aggregate each field as appropriate. 
-            res = [{'datetime':x['datetime'], 
-                    'trips':sum(y[0] for y in x['data'] if y[0] is not None),
-                    'returns':sum(y[1] for y in x['data'] if y[1] is not None)
-                   } 
-                   for x in res]
-    return res
+    return [{**agg_keys(r), **agg(r)} for r in res]
  
+def trim_datetime(datetime,frequency):
+    if frequency == 'h':
+        pass
+    if frequency == 'd':
+        datetime = datetime.replace(hour=0)
+    if frequency == 'm':
+        datetime = datetime.replace(hour=0, day=1)
+    if frequency == 'y':
+        datetime = datetime.replace(hour=0, day=1, month=1)
+    
+    return datetime
     
 def return_api_error():
 
