@@ -87,16 +87,18 @@ def get_system_trips(session, t1,t2, sys_name, frequency,tz):
     if len(res2) == 0:
         return json_response(res)
 
+    
     res2 =  [{'datetime':to_local_time(time,tz),'trips':trips,'returns':returns} for time,trips,returns in res2]
-    for r in res:
+    for r in res2:
         r['datetime'] = trim_datetime(r['datetime'],frequency)
-    res2 = _dict_groupby(res,key_fields,agg_key)
-
+    res2 = _dict_groupby(res2,key_fields,agg_key)
+    
+    
     # Add free bikes to main response
     for r in res:
 
         r['free bike trips'] = [r2 for r2 in res2 if r2['datetime']==r['datetime']]
-        if len(r['free bike trips']) > 0:
+        if len(r['free bike trips']) > 0 and 'trips' in r['free bike trips'][0].keys():
             r['free bike trips'] = r['free bike trips'][0]['trips']
         else:
             r['free bike trips'] = 0
