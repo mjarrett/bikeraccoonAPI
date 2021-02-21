@@ -28,7 +28,8 @@ def get_station_trips(session, t1,t2,sys_name,station_id,frequency,tz):
         
     key_fields = ['datetime']
 
-    agg_key = {'trips':_sum, 'returns':_sum, 'num_bikes_available': _mean, 'num_docks_available':_mean}
+    agg_key = {'trips':_sum, 'returns':_sum, 'num_bikes_available': _mean, 'num_docks_available':_mean,
+              'station':_first, 'station_id':_first}
     res = _dict_groupby(res,key_fields,agg_key)
     return json_response(res)   
 
