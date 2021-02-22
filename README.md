@@ -42,7 +42,7 @@ To access the data collected by the tracker, we provide the following HTTP endpo
   *Example*: [https://api.raccoon.bike/activity?system=mobi_vancouver&start=2021012800&end=2021012900&frequency=m&station=0001](https://api.raccoon.bike/activity?system=mobi_vancouver&start=2021012800&end=2021012900&frequency=m&station=0001)  
   
   
-# License
+## License
 
 This software is licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
