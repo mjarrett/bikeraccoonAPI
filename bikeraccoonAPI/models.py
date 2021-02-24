@@ -21,6 +21,10 @@ class System(Base):
     system_data_start = Column(DateTime)
     system_data_end = Column(DateTime)
     stations = relationship("Station", back_populates='system')
+    brand = Column(String)
+    city = Column(String)
+    province = Column(String)
+    country = Column(String)
     
     def __repr__(self):
         return f"<System: name={self.name}>"

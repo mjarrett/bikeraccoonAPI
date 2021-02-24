@@ -260,17 +260,18 @@ def activate_system(system,session):
     # If system doesn't exist, create it
     if len(sys_objs) == 0:
         sys_obj = System(**system)
-        session.add(sys_obj)
+        
     else:
         #update system object to match content in systems.json
         sys_obj = sys_objs[0]
-        sys_obj.name = system['name']
-        sys_obj.tz = system['tz']
-        sys_obj.url = system['url']
+        for key, value in system.items():
+            setattr(sys_obj, key, value)
+
+        
 
     # set tracking to on
     sys_obj.is_tracking = True
-
+    session.add(sys_obj)
     
     session.commit()
     
