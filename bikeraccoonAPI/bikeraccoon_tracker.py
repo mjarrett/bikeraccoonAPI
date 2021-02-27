@@ -61,6 +61,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
     ## Setup 
     ddf = bdf = pd.DataFrame()
     last_update = dt.datetime.now()
+    query_time = dt.datetime.now()
     update_delta = dt.timedelta(minutes=update_interval)
     
     engine = create_engine(f'sqlite:///{db_file}', echo=False)  
@@ -94,6 +95,12 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
     logger.info("Daemon started successfully")
     
     while True:
+        
+        
+        if dt.datetime.now() < query_time:
+            continue
+        else:
+            query_time = dt.datetime.now() + dt.timedelta(seconds=query_interval)
 
         logger.info(f"start: {dt.datetime.now()}")
 
@@ -121,7 +128,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
         session.close()
             
         logger.info(f"end: {dt.datetime.now()}")
-        time.sleep(query_interval)
+        time.sleep(1)  # Check whether it's time to update every second (actual query interval time determined by "query_interval"
 
 
 
