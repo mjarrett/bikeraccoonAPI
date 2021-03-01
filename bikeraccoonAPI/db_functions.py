@@ -121,6 +121,8 @@ def update_trips(system, session, engine_raw):
     session.commit()
 
     
+    
+    
     # Drop records in raw tables except for most recent query
     trim_raw(f"{system.name}_stations_raw", engine_raw)
     trim_raw(f"{system.name}_bikes_raw", engine_raw)
@@ -243,74 +245,44 @@ def update_stations(system, session):
 
     
     
-def activate_system(system,session):
 
-    # This one uses the system dictionary, NOT the system ORM object
     
-    
-    # find any systems with the same name
-    sys_objs = session.query(System).filter_by(name=system['name']).all()
-    # If more than one, delete extras
-    if len(sys_objs) > 1:
-        for obj in sys_objs:
-            obj.delete()
+# def update_systems(session):
+#     logger.debug("Updating system table")
+#     for sys_obj in session.query(System).all():
 
-
-
-    # If system doesn't exist, create it
-    if len(sys_objs) == 0:
-        sys_obj = System(**system)
-        
-    else:
-        #update system object to match content in systems.json
-        sys_obj = sys_objs[0]
-        for key, value in system.items():
-            setattr(sys_obj, key, value)
-
-        
-
-    # set tracking to on
-    sys_obj.is_tracking = True
-    session.add(sys_obj)
-    
-    session.commit()
-    
-def update_systems(session):
-    logger.debug("Updating system table")
-    for sys_obj in session.query(System).all():
-
-        qry = session.query(Measurement.datetime).join(Station).join(System)
-        qry = qry.filter(System.name==sys_obj.name).order_by(Measurement.datetime.desc())
-        last = qry.first()
+#         qry = session.query(Measurement.datetime).join(Station).join(System)
+#         qry = qry.filter(System.name==sys_obj.name).order_by(Measurement.datetime.desc())
+#         last = qry.first()
              
-        qry = session.query(Measurement.datetime).join(Station).join(System)
-        qry = qry.filter(System.name==sys_obj.name).order_by(Measurement.datetime)
-        first = qry.first()
+#         qry = session.query(Measurement.datetime).join(Station).join(System)
+#         qry = qry.filter(System.name==sys_obj.name).order_by(Measurement.datetime)
+#         first = qry.first()
 
-        if first is not None:
-            sys_obj.tracking_start = first[0]
-            sys_obj.tracking_end   = None if sys_obj.is_tracking else last[0]
+#         if first is not None:
+#             sys_obj.tracking_start = first[0]
+#             sys_obj.tracking_end   = None if sys_obj.is_tracking else last[0]
 
-        # check if system data exists
-        first = session.query(Trip.departure_time).join(Station,Trip.departure_station_id==Station.id).join(System).filter(System.name==sys_obj.name).order_by(Trip.departure_time.desc()).first()
-        last = session.query(Trip.departure_time).join(Station,Trip.departure_station_id==Station.id).join(System).filter(System.name==sys_obj.name).order_by(Trip.departure_time).first()
+#         # check if system data exists
+#         first = session.query(Trip.departure_time).join(Station,Trip.departure_station_id==Station.id).join(System).filter(System.name==sys_obj.name).order_by(Trip.departure_time.desc()).first()
+#         last = session.query(Trip.departure_time).join(Station,Trip.departure_station_id==Station.id).join(System).filter(System.name==sys_obj.name).order_by(Trip.departure_time).first()
 
-        if first is not None:
-            sys_obj.has_system_data = True
-            sys_obj.system_data_start = first
-            sys_obj.system_data_end = last
-        else:
-            sys_obj.has_system_data = False
+#         if first is not None:
+#             sys_obj.has_system_data = True
+#             sys_obj.system_data_start = first
+#             sys_obj.system_data_end = last
+#         else:
+#             sys_obj.has_system_data = False
 
-        session.add(sys_obj)  
+#         session.add(sys_obj)  
 
-        # Add a "free_bikes" station if it doesn't exist
-        fb_station = session.query(Station).join(System).filter(System==sys_obj,Station.station_id=='free_bikes').all()
-        if len(fb_station) == 0:
-            fb_station = Station(name='free_bikes',station_id='free_bikes', system_id=sys_obj.id)
-            session.add(fb_station)
+#         # Add a "free_bikes" station if it doesn't exist
+#         fb_station = session.query(Station).join(System).filter(System==sys_obj,Station.station_id=='free_bikes').all()
+#         if len(fb_station) == 0:
+#             fb_station = Station(name='free_bikes',station_id='free_bikes', system_id=sys_obj.id)
+#             session.add(fb_station)
 
 
-    session.commit()
+#     session.commit()
     
         

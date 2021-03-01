@@ -7,8 +7,8 @@ import json
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-from .db_functions import (make_raw_tables, update_free_bikes_raw, activate_system,
-                         update_stations_raw, update_trips, update_stations, update_systems,
+from .db_functions import (make_raw_tables, update_free_bikes_raw,
+                         update_stations_raw, update_trips, update_stations,
                          )
 
 from sqlalchemy import create_engine
@@ -67,26 +67,14 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
     # This is for the raw tracking to minimize access to the main db
     engine_raw = create_engine(f'sqlite:///{db_file_raw}', echo=False)  
     
-    systems = load_systems(systems_file)
+    
    
     session = Session(engine)
     Base.metadata.create_all(engine)  # Create ORM tables if they don't exist
 
-    # Set all systems to "not_tracking". They will be turned on in the activate_system() call
-    for sys_obj in session.query(System).all():
-        sys_obj.is_tracking = False
-    session.commit()
-    
-    for system in systems.values():
-        activate_system(system, session)
-        
-        
-    # This updates the metadata for each system
-    update_systems(session)    
-    
-    # Do an initial station update on startup
+
+  # Do an initial station update on startup
     for system in session.query(System).filter(System.is_tracking==True):
-        print(system)
         make_raw_tables(system, engine_raw)
         update_stations(system, session)
 
@@ -104,7 +92,8 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
             update_stations_raw(system, engine_raw)
 
             update_free_bikes_raw(system, engine_raw)
-        
+
+            system.tracking_end = dt.datetime.utcnow() # Last update
 
         logger.debug(f"Next DB update: {last_update + update_delta}")
         if dt.datetime.now() >  last_update + update_delta:
