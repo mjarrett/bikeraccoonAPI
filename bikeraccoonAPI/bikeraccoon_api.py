@@ -38,11 +38,13 @@ def favicon():
 
 @app.route('/')
 def default():
-    return "This is the Flask API landing page... for now"
+    return render_template("frontpage.html")
 
 @app.route('/tests')
 def tests():
     return render_template("tests.html")
+
+
 
 @app.route('/systems', methods=['GET'])
 def get_systems():
