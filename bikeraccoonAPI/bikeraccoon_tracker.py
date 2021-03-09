@@ -40,7 +40,8 @@ def load_systems(systems_file):
 
 def tracker(systems_file='systems.json',db_file='bikeraccoon.db', 
             db_file_raw='bikeraccoon-raw.db',log_file=None,
-            update_interval=20, query_interval=20, station_check_hour=4):
+            update_interval=20, query_interval=20, station_check_hour=4,
+            save_temp_data=False):
     
     ## SETUP LOGGING
     logger = logging.getLogger("Rotating Log")
@@ -119,7 +120,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
 
             for system in session.query(System).filter(System.is_tracking==True):
                 
-                update_trips(system, session, engine_raw)
+                update_trips(system, session, engine_raw, save_temp_data=save_temp_data)
 
                 if get_system_time(system).hour == station_check_hour: # check stations at 4am local time
                     logger.info(f"***{system.name} updating stations")

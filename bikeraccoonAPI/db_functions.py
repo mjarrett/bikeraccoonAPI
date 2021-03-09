@@ -10,8 +10,8 @@ from .models import Measurement, System, Station, Trip
 import logging
 logger = logging.getLogger("Rotating Log")
 
-
-        
+import datetime as dt
+import os
         
 
 def make_raw_tables(system, engine):
@@ -71,7 +71,7 @@ def map_station_id_to_station(station_id,system,session):
     
     return qry.first()
     
-def update_trips(system, session, engine_raw):
+def update_trips(system, session, engine_raw, save_temp_data=False):
     
     """
     Pulls raw data from raw db, computes trips, saves trip data to main db via session
@@ -83,12 +83,20 @@ def update_trips(system, session, engine_raw):
 
     ## Compute hourly station trips, append to trips table
     ddf = pd.read_sql(f"select * from {system.name}_stations_raw",engine_raw, parse_dates='datetime')   
-            
     ## Compute hourly free bike trips, append to trips table
     bdf = pd.read_sql(f"select * from {system.name}_bikes_raw",engine_raw, parse_dates='datetime')  
-    
+   
     thdf = pd.concat([make_free_bike_trips(bdf), make_station_trips(ddf)], sort=True)
-        
+
+    
+    # save temp data to CSV files
+    if save_temp_data:
+        if not os.path.exists('./logs'):
+            os.makedirs('./logs')
+
+        time_slug = dt.datetime.now().strftime('%Y%m%d%H%M')
+        ddf.to_csv(f'./logs/station_data-{system.name}-{time_slug}.csv', index=False)
+        bdf.to_csv(f'./logs/bike_data-{system.name}-{time_slug}.csv', index=False)
         
     ## Get station objects to match to records  
     try:
