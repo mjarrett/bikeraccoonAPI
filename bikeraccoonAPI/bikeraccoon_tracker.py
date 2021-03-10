@@ -40,7 +40,8 @@ def load_systems(systems_file):
 
 def tracker(systems_file='systems.json',db_file='bikeraccoon.db', 
             db_file_raw='bikeraccoon-raw.db',log_file=None,
-            update_interval=20, query_interval=20, station_check_hour=4):
+            update_interval=20, query_interval=20, station_check_hour=4,
+            save_temp_data=False):
     
     ## SETUP LOGGING
     logger = logging.getLogger("Rotating Log")
@@ -61,6 +62,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
     ## Setup 
     ddf = bdf = pd.DataFrame()
     last_update = dt.datetime.now()
+    query_time = dt.datetime.now()
     update_delta = dt.timedelta(minutes=update_interval)
     
     engine = create_engine(f'sqlite:///{db_file}', echo=False)  
@@ -82,6 +84,12 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
     logger.info("Daemon started successfully")
     
     while True:
+        
+        
+        if dt.datetime.now() < query_time:
+            continue
+        else:
+            query_time = dt.datetime.now() + dt.timedelta(seconds=query_interval)
 
         logger.info(f"start: {dt.datetime.now()}")
 
@@ -101,7 +109,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
 
             for system in session.query(System).filter(System.is_tracking==True):
                 
-                update_trips(system, session, engine_raw)
+                update_trips(system, session, engine_raw, save_temp_data=save_temp_data)
 
                 if get_system_time(system).hour == station_check_hour: # check stations at 4am local time
                     logger.info(f"***{system.name} updating stations")
@@ -110,7 +118,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
         session.close()
             
         logger.info(f"end: {dt.datetime.now()}")
-        time.sleep(query_interval)
+        time.sleep(1)  # Check whether it's time to update every second (actual query interval time determined by "query_interval"
 
 
 
