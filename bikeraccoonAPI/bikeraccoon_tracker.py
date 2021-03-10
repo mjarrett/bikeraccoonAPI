@@ -25,16 +25,9 @@ def get_system_time(system):
     return pd.Timestamp(dt.datetime.utcnow()).tz_localize('UTC').tz_convert(system.tz)
 
 
-class BikeShareSystem(dict):
-    pass
 
-def load_systems(systems_file):
 
-    with open(systems_file) as f:
-        systems = json.load(f)
-        systems = {k:BikeShareSystem(v) for k,v in systems.items()}
 
-    return systems
 
 
 

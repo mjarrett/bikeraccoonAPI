@@ -1,9 +1,20 @@
+#!/usr/bin/env python3
+
 import sys
+import json
+import datetime as dt
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from bikeraccoonAPI import Measurement, System, Station, Trip
+from bikeraccoonAPI import Measurement, System, Station, Trip, Base
+
+def load_systems(systems_file):
+
+    with open(systems_file) as f:
+        systems = json.load(f)
+
+    return systems
 
 def add_system(system,session):
 
@@ -15,7 +26,7 @@ def add_system(system,session):
     if len(sys_objs) > 0:
         raise ValueError("System already exists in database")
         
-
+    
 
 
     # If system doesn't exist, create it
@@ -41,34 +52,52 @@ def add_system(system,session):
 
 if __name__ == '__main__':
     
-    db_file = sys.argv[3]
-    engine = create_engine(f'sqlite:///{db_file}', echo=False)     
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Tools to manage a bikeraccoon instance')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--init", action="store_true")
+    group.add_argument("--add", action="store_true")
+    group.add_argument("--activate", action="store_true")
+    group.add_argument("--deactivate", action="store_true")
+    parser.add_argument("-d", "--database", type=str,
+                    help="specify path to database", default='bikeraccoon.db')
+    parser.add_argument("-f", "--file", type=str,
+                    help="file with system information", default='systems.json')
+    parser.add_argument("-s", "--system", type=str,
+                    help="system name")
+
+
+    args = parser.parse_args()
+    
+    # Connect to DB
+    engine = create_engine(f"sqlite:///{args.database}")
     session = Session(engine)
     
-
-    if sys.argv[1] == 'add':
     
-        systems_file = sys.argv[2]
-        systems = load_systems(systems_file)
+    if args.init:
+        Base.metadata.create_all(engine)  # Create ORM tables if they don't exist
+    
+    elif args.add:
+    
+        systems = load_systems(args.file)
 
         for system in systems.values():
             add_system(system, session)
             
             
             
-    elif sys.argv[1] == 'activate':
-        sys_name = sys.argv[2]
+    elif args.activate:
         
-        sys_obj = session.query(System).filter_by(name=sys_name).first()
+        sys_obj = session.query(System).filter_by(name=args.system).first()
         
         sys_obj.is_tracking = True
         session.add(sys_obj)
         session.commit()
             
-    elif sys.argv[1] == 'deactivate':
-        sys_name = sys.argv[2]
+    elif args.deactivate:
         
-        sys_obj = session.query(System).filter_by(name=sys_name).first()
+        sys_obj = session.query(System).filter_by(name=args.system).first()
         
         sys_obj.is_tracking = False
         session.add(sys_obj)
