@@ -80,6 +80,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
         
         
         if dt.datetime.now() < query_time:
+            time.sleep(1)  # Check whether it's time to update every second (actual query interval time determined by 
             continue
         else:
             query_time = dt.datetime.now() + dt.timedelta(seconds=query_interval)
@@ -111,7 +112,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
         session.close()
             
         logger.info(f"end: {dt.datetime.now()}")
-        time.sleep(1)  # Check whether it's time to update every second (actual query interval time determined by "query_interval"
+        "query_interval"
 
 
 
