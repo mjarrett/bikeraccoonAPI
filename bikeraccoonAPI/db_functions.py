@@ -234,20 +234,63 @@ def make_free_bike_trips(bdf):
                 
                 
 def update_stations(system, session):
-
+    """
+    Update stations table
+    Adds station if doesn't exist, updates active status
+    """
+    logger.info(f"{system.name} Station Update")
     try:
         sdf = query_station_info(system.url)
     except Exception as e:
         logger.debug(f"{system.name} failed to load stations: {e}")
         return 
     
+    try:
+        ddf = query_station_status(system.url)
+    except Exception as e:
+        logger.debug(f"{system.name} failed to load station status: {e}")
+        return 
     
+    
+    
+    
+    # Get all current stations
+    station_objs = session.query(Station).join(System).filter(System.id==system.id).all()
+    station_objs_ids = [x.station_id for x in station_objs]
+    
+    # Run through station info data to find new stations
     for station in sdf.to_dict('records'):
-        if session.query(Station).filter_by(name=station['name']).first() is None:
-            session.add(Station(**station, system_id=system.id))
-    
+        # If station doesn't exist, create it
+        if station['station_id'] not in station_objs_ids:
+            session.add(Station(**station, system_id=system.id, active=True))
+
+    # Run through station status data to label disabled stations
+    for station in ddf.to_dict('records'):
+        
+        try:
+            station_obj = [x for x in station_objs if x.station_id == station['station_id']][0]
+        except:
+            print(station)
+            continue
+                
+        if station['is_renting'] == 0:
+        
+            station_obj.active = False
+        elif station['is_renting'] == 1 and not station_obj.active:
+            station_obj.active = True
+            
+        session.add(station_obj)
+        
+    #Run through current stations and disable any that aren't found in station info
+    for station_obj in station_objs:
+        if station_obj.station_id not in list(sdf['station_id']):
+            station_obj.active = False
+            session.add(station_obj)
+            
+
+            
     session.commit()
-    logger.info(f"{system.name} Station Update")
+    logger.info(f"{system.name} Station Update Complete")
     
     
 

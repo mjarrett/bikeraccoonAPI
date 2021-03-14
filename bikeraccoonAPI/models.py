@@ -35,12 +35,13 @@ class System(Base):
 class Station(Base):
     __tablename__ = 'station'
     id = Column(Integer, primary_key=True)
-    created_date = Column(DateTime, default=dt.datetime.utcnow)  
+    created_date = Column(DateTime, default=dt.datetime.utcnow)
+    disabled_date = Column(DateTime, default=None)
     station_id = Column(String)
     name = Column('name',String)
     lat = Column('lat', Float)
     lon = Column('lon', Float)
-    measurements = relationship("Measurement")
+    active = Column('active',Boolean)
     system_id = Column(Integer, ForeignKey('system.id'), index=True)
     system = relationship("System", back_populates='stations')
     measurements = relationship("Measurement", back_populates='station')
@@ -49,7 +50,7 @@ class Station(Base):
         return f"<Station: name={self.name} system={self.system.name}>"
     
     def as_dict(self):
-        cols = ["created_date", "name",'lat','lon','station_id']
+        cols = ["created_date", "name",'lat','lon','station_id','active','disabled_date']
         r =  {c.name: getattr(self, c.name) for c in self.__table__.columns if c.name in cols}
         r['system'] = self.system.name
         r['created_date'] = str(self.created_date)
