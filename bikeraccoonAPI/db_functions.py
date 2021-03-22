@@ -66,8 +66,8 @@ def map_station_id_to_station(station_id,system,session):
     with the latest 'created_by' date for that station_id and system
     """
     
-    qry = session.query(Station).filter(System.name==system.name)
-    qry = qry.filter_by(station_id=station_id).order_by(Station.created_date.desc())
+    qry = session.query(Station).join(System).filter(System.name==system.name)
+    qry = qry.filter(Station.station_id==station_id).order_by(Station.created_date.desc())
     
     return qry.first()
     
