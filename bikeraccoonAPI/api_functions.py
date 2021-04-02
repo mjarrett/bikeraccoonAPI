@@ -144,8 +144,11 @@ def _mean(x):
     
 def _dict_groupby(res, key_fields, agg_key):
 
+    
+    
     key = lambda x: [x[field] for field in key_fields]
 
+    res = sorted(res,key=key) # itertools.groupby takes a *sorted* iterable
 
     # First, gather each field for each grouped date
     res = [{'key':k,'data':[{y:x[y] for y in x.keys() if y not in key_fields} 
