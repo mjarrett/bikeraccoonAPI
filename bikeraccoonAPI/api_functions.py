@@ -145,6 +145,13 @@ def _mean(x):
 def _dict_groupby(res, key_fields, agg_key):
 
     
+    # We need to group datetimes without tz info to avoid a bug during DST changes
+    if 'datetime' in key_fields:
+        for r in res:
+            r['datetime_notz'] = r['datetime'].strftime('%Y-%m-%d %H')
+            
+        key_fields = [x for x in key_fields if x!='datetime']  + ['datetime_notz']
+        agg_key['datetime']=_first
     
     key = lambda x: [x[field] for field in key_fields]
 
@@ -162,7 +169,7 @@ def _dict_groupby(res, key_fields, agg_key):
         return {field:agg_key[field]([y[field] for y in r['data']])  for field in agg_key.keys() if field in r['data'][0].keys()}
 
     def agg_keys(r):
-        return {field:r['key'][i] for i,field in enumerate(key_fields)}
+        return {field:r['key'][i] for i,field in enumerate(key_fields) if field!='datetime_notz'}
 
 
     return [{**agg_keys(r), **agg(r)} for r in res]
