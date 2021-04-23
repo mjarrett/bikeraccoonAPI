@@ -40,7 +40,7 @@ def get_station_trips(session, t1,t2,sys_name,station_id,frequency,tz):
     res = _dict_groupby(res,key_fields,agg_key)
     return json_response(res)   
 
-def get_all_stations_trips(session, t1,t2,sys_name,frequency,tz):
+def get_all_stations_trips(session, t1,t2,sys_name,frequency,tz,limit):
     qry = session.query(Measurement)
     qry = qry.filter(Measurement.datetime >= t1, Measurement.datetime <= t2)
     qry = qry.filter(System.name == sys_name)
@@ -62,6 +62,14 @@ def get_all_stations_trips(session, t1,t2,sys_name,frequency,tz):
 
     agg_key = {'trips':_sum, 'returns':_sum, 'num_bikes_available': _mean, 'num_docks_available':_mean, 'station':_first}
     res = _dict_groupby(res,key_fields,agg_key)
+    
+    if frequency == 't' and limit is not None:
+        res = sorted(res,key=lambda x: x['trips'],reverse=True)
+        if limit > 0:
+            res = res[:limit]
+        elif limit < 0:
+            res = res[limit:]
+    
     
     return json_response(res)    
     
