@@ -75,6 +75,7 @@ def get_activity():
     t2 = request.args.get('end', default=None, type=str)
     frequency = request.args.get('frequency', default='h', type=str)
     station_id = request.args.get('station', default=None, type=str)
+    limit = request.args.get('limit', default=None, type=int)
    
     # Assume provided time is in system timezone, convert to UTC
     tz = db.session.query(System.tz).filter_by(name=sys_name).first()[0]
@@ -88,7 +89,7 @@ def get_activity():
         return get_system_trips(db.session, t1,t2, sys_name, frequency,tz)
   
     if station_id == 'all':
-        return get_all_stations_trips(db.session, t1,t2,sys_name,frequency,tz)
+        return get_all_stations_trips(db.session, t1,t2,sys_name,frequency,tz,limit)
     
     # get list of station ids for system
     station_ids = db.session.query(Station.station_id).join(System).filter(System.name==sys_name,Station.id!='free_bikes').all()

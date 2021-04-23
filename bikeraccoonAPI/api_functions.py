@@ -22,9 +22,16 @@ def get_station_trips(session, t1,t2,sys_name,station_id,frequency,tz):
     qry = qry.join(Station).join(System)
     qry = qry.filter(Station.station_id==station_id)
     res = [x.as_dict() for x in qry.all()]
-    for r in res:
-        r['datetime'] = to_local_time(r['datetime'],tz)
-        r['datetime'] = trim_datetime(r['datetime'],frequency)
+    
+    # for special case, set all times to initial time
+    if frequency == 't':
+        t = to_local_time(res[0]['datetime'],tz)
+        for r in res:
+            r['datetime'] = t
+    else:
+        for r in res:
+            r['datetime'] = to_local_time(r['datetime'],tz)
+            r['datetime'] = trim_datetime(r['datetime'],frequency)
         
     key_fields = ['datetime']
 
@@ -33,21 +40,36 @@ def get_station_trips(session, t1,t2,sys_name,station_id,frequency,tz):
     res = _dict_groupby(res,key_fields,agg_key)
     return json_response(res)   
 
-def get_all_stations_trips(session, t1,t2,sys_name,frequency,tz):
+def get_all_stations_trips(session, t1,t2,sys_name,frequency,tz,limit):
     qry = session.query(Measurement)
     qry = qry.filter(Measurement.datetime >= t1, Measurement.datetime <= t2)
     qry = qry.filter(System.name == sys_name)
     qry = qry.join(Station).join(System)
     qry = qry.filter(Station.station_id!='free_bikes')
     res = [x.as_dict() for x in qry.all()]
-    for r in res:
-        r['datetime'] = to_local_time(r['datetime'],tz)
-        r['datetime'] = trim_datetime(r['datetime'],frequency)
+
+    # for special case, set all times to initial time
+    if frequency == 't':
+        t = to_local_time(res[0]['datetime'],tz)
+        for r in res:
+            r['datetime'] = t
+    else:
+        for r in res:
+            r['datetime'] = to_local_time(r['datetime'],tz)
+            r['datetime'] = trim_datetime(r['datetime'],frequency)    
     
     key_fields = ['datetime','station_id']
 
     agg_key = {'trips':_sum, 'returns':_sum, 'num_bikes_available': _mean, 'num_docks_available':_mean, 'station':_first}
     res = _dict_groupby(res,key_fields,agg_key)
+    
+    if frequency == 't' and limit is not None:
+        res = sorted(res,key=lambda x: x['trips'],reverse=True)
+        if limit > 0:
+            res = res[:limit]
+        elif limit < 0:
+            res = res[limit:]
+    
     
     return json_response(res)    
     
@@ -64,9 +86,15 @@ def get_system_trips(session, t1,t2, sys_name, frequency,tz):
 
     qry = qry.group_by(Measurement.datetime)
 
-    res =  [{'datetime':to_local_time(time,tz),'trips':trips,'returns':returns} for time,trips,returns in qry.all()]
-    for r in res:
-        r['datetime'] = trim_datetime(r['datetime'],frequency)
+    res = qry.all()
+    
+    #Special case for freq=t
+    if frequency == 't':
+        res = [{'datetime':to_local_time(res[0][0],tz),'trips':trips,'returns':returns} for time,trips,returns in res]
+    else:
+        res =  [{'datetime':to_local_time(time,tz),'trips':trips,'returns':returns} for time,trips,returns in res]
+        for r in res:
+            r['datetime'] = trim_datetime(r['datetime'],frequency)
         
     key_fields = ['datetime']
     agg_key = {'trips':_sum, 'returns':_sum, 'num_bikes_available': _mean, 'num_docks_available':_mean,
@@ -177,12 +205,14 @@ def _dict_groupby(res, key_fields, agg_key):
 def trim_datetime(datetime,frequency):
     if frequency == 'h':
         pass
-    if frequency == 'd':
+    elif frequency == 'd':
         datetime = datetime.replace(hour=0)
-    if frequency == 'm':
+    elif frequency == 'm':
         datetime = datetime.replace(hour=0, day=1)
-    if frequency == 'y':
+    elif frequency == 'y':
         datetime = datetime.replace(hour=0, day=1, month=1)
+        
+
     
     return datetime
     
