@@ -36,8 +36,9 @@ To access the data collected by the tracker, we provide the following HTTP endpo
     system: the system name (as specified in the systems endpoint)
     start: The starting datetime, format: YYYYMMDDHH
     end: The ending datetime (inclusive), format: YYYYMMDDHH
-    frequency: The period in which to group the data. Options are 'h' (hours, default), 'd' (day), 'm' (month), 'y' (year).
+    frequency: The period in which to group the data. Options are 'h' (hours, default), 'd' (day), 'm' (month), 'y' (year), 't' (total in time range).
     station: The station ID of the station (as specified in the stations endpoint). If no station is provided (default), data for the whole system will be returned. If 'all' is provided, data for each station in the system will be returned. If 'free_bikes' is provided, data for free floating bikes is returned.
+    limit: Limit the number of stations returned, sorted by trips. If limit > 0 sort by trips descending, if limit < 0 sort be trips ascending. Only valid when frequency is 't'.
     
   *Example*: [https://api.raccoon.bike/activity?system=mobi_vancouver&start=2021012800&end=2021012900&frequency=m&station=0001](https://api.raccoon.bike/activity?system=mobi_vancouver&start=2021012800&end=2021012900&frequency=m&station=0001)  
   
