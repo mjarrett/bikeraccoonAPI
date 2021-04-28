@@ -239,6 +239,19 @@ def update_stations(system, session):
     Adds station if doesn't exist, updates active status
     """
     logger.info(f"{system.name} Station Update")
+    
+    
+    #Add a "free_bikes" station if it doesn't exist
+    fb_station = session.query(Station).join(System).filter(System==system,Station.station_id=='free_bikes').all()
+    if len(fb_station) == 0:
+        fb_station = Station(name='free_bikes',station_id='free_bikes', system_id=system.id)
+        session.add(fb_station)
+            
+        session.commit()
+        logger.info(f"{system.name} add free_bikes station")
+    
+    
+    
     try:
         sdf = query_station_info(system.url)
     except Exception as e:
@@ -270,7 +283,6 @@ def update_stations(system, session):
         try:
             station_obj = [x for x in station_objs if x.station_id == station['station_id']][0]
         except:
-            print(station)
             continue
                 
         if station['is_renting'] == 0:
@@ -288,7 +300,6 @@ def update_stations(system, session):
             session.add(station_obj)
             
 
-            
     session.commit()
     logger.info(f"{system.name} Station Update Complete")
     
