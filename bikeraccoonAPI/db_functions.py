@@ -276,6 +276,17 @@ def update_stations(system, session):
         # If station doesn't exist, create it
         if station['station_id'] not in station_objs_ids:
             session.add(Station(**station, system_id=system.id, active=True))
+            
+        # If station is in DB, update if values have changed    
+        else:
+            station_obj = [x for x in station_objs if x.station_id == station['station_id']][0]
+            
+            if (station_obj.name != station['name']) or (station_obj.lat != station['lat']) or (station_obj.lon != station['lon']):
+                station_obj.name = station['name']
+                station_obj.lat = station['lat']
+                station_obj.lon = station['lon']
+                
+                session.add(station_obj)
 
     # Run through station status data to label disabled stations
     for station in ddf.to_dict('records'):
