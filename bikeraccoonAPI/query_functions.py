@@ -46,12 +46,18 @@ def query_station_status(sys_url):
     with urllib.request.urlopen(url, context=ssl._create_unverified_context()) as data_url:
         data = json.loads(data_url.read().decode())
 
-
-    df = pd.DataFrame(data['data']['stations'])
-
+    try:
+        df = pd.DataFrame(data['data']['stations'])
+    except KeyError:
+        df = pd.DataFrame(data['stations'])
+        
     df = df.drop_duplicates(['station_id','last_reported'])
-    df['datetime'] = data['last_updated']
-    df['datetime'] = df['datetime'].map(lambda x: dt.datetime.utcfromtimestamp(x))
+    try:
+        df['datetime'] = data['last_updated']
+        df['datetime'] = df['datetime'].map(lambda x: dt.datetime.utcfromtimestamp(x))
+    except KeyError:
+        df['datetime'] = dt.datetime.utcnow()
+    
     df['datetime'] = df['datetime'].dt.tz_localize('UTC')
     
     df = df[['datetime','num_bikes_available','num_docks_available','is_renting','station_id']]
@@ -70,8 +76,10 @@ def query_station_info(sys_url):
     with urllib.request.urlopen(url, context=ssl._create_unverified_context()) as data_url:
         data = json.loads(data_url.read().decode())  
 
-    
-    df =  pd.DataFrame(data['data']['stations'])
+    try:
+        df =  pd.DataFrame(data['data']['stations'])
+    except KeyError:
+        df =  pd.DataFrame(data['stations'])
     return df[['name','station_id','lat','lon']]
 
 @timeout_decorator.timeout(30) 
@@ -86,11 +94,19 @@ def query_free_bikes(sys_url):
     with urllib.request.urlopen(url, context=ssl._create_unverified_context()) as data_url:
         data = json.loads(data_url.read().decode())
 
-    df = pd.DataFrame(data['data']['bikes'])
+    try:    
+        df = pd.DataFrame(data['data']['bikes'])
+    except KeyError:
+        df = pd.DataFrame(data['bikes'])
+        
     df['bike_id'] = df['bike_id'].astype(str)
 
-    df['datetime'] = data['last_updated']
-    df['datetime'] = df['datetime'].map(lambda x: dt.datetime.utcfromtimestamp(x))
+    try:
+        df['datetime'] = data['last_updated']
+        df['datetime'] = df['datetime'].map(lambda x: dt.datetime.utcfromtimestamp(x))
+    except KeyError:
+        df['datetime'] = dt.datetime.utcnow()
+    
     df['datetime'] = df['datetime'].dt.tz_localize('UTC')
     
     
