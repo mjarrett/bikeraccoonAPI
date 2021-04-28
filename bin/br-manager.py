@@ -9,6 +9,22 @@ from sqlalchemy.orm import Session
 
 from bikeraccoonAPI import Measurement, System, Station, Trip, Base
 
+
+def load_system_interactive():
+    name = input('name: ')
+    tz = input('timezone: ')
+    url = input('url: ')
+   
+    brand = input('brand: ')
+    city = input('city: ')
+    province = input('province: ')
+    country = input('country: ')
+    
+    system = {'name':name, 'tz':tz, 'url':url,'brand':brand, 'city':city,'province':province,'country':country}
+    return system
+
+
+
 def load_systems(systems_file):
 
     with open(systems_file) as f:
@@ -56,14 +72,18 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Tools to manage a bikeraccoon instance')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--init", action="store_true")
-    group.add_argument("--add", action="store_true")
-    group.add_argument("--activate", action="store_true")
-    group.add_argument("--deactivate", action="store_true")
+    group.add_argument("--init", action="store_true",
+                      help="Initialize a new bikeraccoon database")
+    group.add_argument("--add", action="store_true",
+                      help="Add a new system to DB")
+    group.add_argument("--activate", action="store_true",
+                      help="Activate a deactivated system")
+    group.add_argument("--deactivate", action="store_true",
+                      help="Deactivate an active system")
     parser.add_argument("-d", "--database", type=str,
                     help="specify path to database", default='bikeraccoon.db')
     parser.add_argument("-f", "--file", type=str,
-                    help="file with system information", default='systems.json')
+                    help="file with system information", default=None)
     parser.add_argument("-s", "--system", type=str,
                     help="system name")
 
@@ -80,11 +100,18 @@ if __name__ == '__main__':
     
     elif args.add:
     
-        systems = load_systems(args.file)
+        # If we provided a file
+        if args.file is not None:
 
-        for system in systems.values():
-            add_system(system, session)
+            systems = load_systems(args.file)
+
+            for system in systems.values():
+                add_system(system, session)
             
+        
+        # If we didn't provide a file, go interactive
+        system = load_system_interactive()   
+        add_system(system,session)
             
             
     elif args.activate:
