@@ -9,16 +9,16 @@ import logging
 logger = logging.getLogger("Rotating Log")
 
 def get_station_status_url(sys_url):
-    data = requests.get(url).json()
+    data = requests.get(sys_url).json()
     return [x for x in data['data']['en']['feeds'] if x['name']=='station_status'][0]['url']      
 
 def get_station_info_url(sys_url):
-    data = requests.get(url).json()
+    data = requests.get(sys_url).json()
     return [x for x in data['data']['en']['feeds'] if x['name']=='station_information'][0]['url']   
 
 
 def get_system_info_url(sys_url):
-    data = requests.get(url).json()
+    data = requests.get(sys_url).json()
     return [x for x in data['data']['en']['feeds'] if x['name']=='system_information'][0]['url']
 
 @timeout_decorator.timeout(30) 
@@ -109,5 +109,5 @@ def query_free_bikes(sys_url):
 
     
 def get_free_bike_url(sys_url):
-    data = r = requests.get(url).json()
+    data = requests.get(sys_url).json()
     return [x for x in data['data']['en']['feeds'] if x['name']=='free_bike_status'][0]['url']
