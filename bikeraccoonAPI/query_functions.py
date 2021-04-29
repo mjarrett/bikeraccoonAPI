@@ -1,6 +1,6 @@
 import pandas as pd
 import json
-import urllib.request
+import requests
 import datetime as dt
 import timeout_decorator
 import ssl
@@ -9,27 +9,23 @@ import logging
 logger = logging.getLogger("Rotating Log")
 
 def get_station_status_url(sys_url):
-    with urllib.request.urlopen(sys_url,context=ssl._create_unverified_context()) as url:
-        data = json.loads(url.read().decode())
+    data = requests.get(url).json()
     return [x for x in data['data']['en']['feeds'] if x['name']=='station_status'][0]['url']      
 
 def get_station_info_url(sys_url):
-    with urllib.request.urlopen(sys_url,context=ssl._create_unverified_context()) as url:
-        data = json.loads(url.read().decode())
+    data = requests.get(url).json()
     return [x for x in data['data']['en']['feeds'] if x['name']=='station_information'][0]['url']   
 
 
 def get_system_info_url(sys_url):
-    with urllib.request.urlopen(sys_url,context=ssl._create_unverified_context()) as url:
-        data = json.loads(url.read().decode())
+    data = requests.get(url).json()
     return [x for x in data['data']['en']['feeds'] if x['name']=='system_information'][0]['url']
 
 @timeout_decorator.timeout(30) 
 def query_system_info(sys_url):
     url = get_system_info_url(sys_url)
 
-    with urllib.request.urlopen(url, context=ssl._create_unverified_context()) as data_url:
-        data = json.loads(data_url.read().decode())  
+    data = requests.get(url).json()
 
     return data
 
@@ -43,8 +39,7 @@ def query_station_status(sys_url):
     url = get_station_status_url(sys_url)
 
 
-    with urllib.request.urlopen(url, context=ssl._create_unverified_context()) as data_url:
-        data = json.loads(data_url.read().decode())
+    data = requests.get(url).json()
 
     try:
         df = pd.DataFrame(data['data']['stations'])
@@ -73,8 +68,7 @@ def query_station_info(sys_url):
     """
     url = get_station_info_url(sys_url)
 
-    with urllib.request.urlopen(url, context=ssl._create_unverified_context()) as data_url:
-        data = json.loads(data_url.read().decode())  
+    data = requests.get(url).json()
 
     try:
         df =  pd.DataFrame(data['data']['stations'])
@@ -91,8 +85,7 @@ def query_free_bikes(sys_url):
     
     url = get_free_bike_url(sys_url)
 
-    with urllib.request.urlopen(url, context=ssl._create_unverified_context()) as data_url:
-        data = json.loads(data_url.read().decode())
+    data = requests.get(url).json()
 
     try:    
         df = pd.DataFrame(data['data']['bikes'])
@@ -116,6 +109,5 @@ def query_free_bikes(sys_url):
 
     
 def get_free_bike_url(sys_url):
-    with urllib.request.urlopen(sys_url, context=ssl._create_unverified_context()) as url:
-        data = json.loads(url.read().decode())
+    data = r = requests.get(url).json()
     return [x for x in data['data']['en']['feeds'] if x['name']=='free_bike_status'][0]['url']
