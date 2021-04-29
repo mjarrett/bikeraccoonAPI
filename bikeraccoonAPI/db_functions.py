@@ -250,13 +250,25 @@ def update_stations(system, session):
     
     
     #Add a "free_bikes" station if it doesn't exist
-    fb_station = session.query(Station).join(System).filter(System==system,Station.station_id=='free_bikes').all()
-    if len(fb_station) == 0:
+    fb_stations = session.query(Station).join(System).filter(System.id==system.id,Station.station_id=='free_bikes').all()
+    if len(fb_stations) == 0:
         fb_station = Station(name='free_bikes',station_id='free_bikes', system_id=system.id)
         session.add(fb_station)
             
         session.commit()
         logger.info(f"{system.name} add free_bikes station")
+    
+    # If there's more than one fb station for a system, delete extras and assign trips to first instance
+    elif len(fb_stations) > 1:
+        fb_station = fb_stations[0]
+        ms = session.query(Measurement).join(Station).filter(Station.id.in_( [fb_station.id for fb_station in fb_stations])).all()
+        for m in ms:
+            m.station_id = fb_station.id
+
+        for fb_station in fb_stations[1:]:
+            session.delete(fb_station)
+        session.commit()
+        logger.info(f"{system.name} removed extra free_bikes stations")
     
     
     
