@@ -2,6 +2,7 @@ import pandas as pd
 
 from sqlalchemy import (Table, Column, Integer, String, MetaData, 
                         ForeignKey, Float, Date, Time, DateTime, Boolean, func)
+from sqlalchemy.exc  import OperationalError
 
 from .query_functions import query_station_status, query_free_bikes, query_station_info
 
@@ -82,10 +83,17 @@ def update_trips(system, session, engine_raw, save_temp_data=False):
 
 
     ## Compute hourly station trips, append to trips table
-    ddf = pd.read_sql(f"select * from {system.name}_stations_raw",engine_raw, parse_dates='datetime')   
+    try:
+        ddf = pd.read_sql(f"select * from {system.name}_stations_raw",engine_raw, parse_dates='datetime')   
+    except OperationalError:
+        ddf = pd.DataFrame()
+        
     ## Compute hourly free bike trips, append to trips table
-    bdf = pd.read_sql(f"select * from {system.name}_bikes_raw",engine_raw, parse_dates='datetime')  
-   
+    try:
+        bdf = pd.read_sql(f"select * from {system.name}_bikes_raw",engine_raw, parse_dates='datetime')  
+    except OperationalError:
+        bdf = pd.DataFrame()
+        
     thdf = pd.concat([make_free_bike_trips(bdf), make_station_trips(ddf)], sort=True)
 
     
