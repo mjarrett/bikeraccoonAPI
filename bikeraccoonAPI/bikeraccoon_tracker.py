@@ -71,7 +71,10 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
   # Do an initial station update on startup
     for system in session.query(System).filter(System.is_tracking==True):
         make_raw_tables(system, engine_raw)
-        update_stations(system, session)
+        try:
+            update_stations(system, session)
+        except:
+            session.rollback()
 
     session.close()
     logger.info("Daemon started successfully")
@@ -103,11 +106,17 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
 
             for system in session.query(System).filter(System.is_tracking==True):
                 
-                update_trips(system, session, engine_raw, save_temp_data=save_temp_data)
-
+                try:
+                    update_trips(system, session, engine_raw, save_temp_data=save_temp_data)
+                except:
+                    session.rollback()
+                    
                 if get_system_time(system).hour == station_check_hour: # check stations at 4am local time
                     logger.info(f"***{system.name} updating stations")
-                    update_stations(system, session)
+                    try:
+                        update_stations(system, session)
+                    except:
+                        session.rollback()
             
         session.close()
             
