@@ -94,9 +94,16 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
         for system in session.query(System).filter(System.is_tracking==True):
            
             logger.info(f"***{system.name} - querying station info")
-            update_stations_raw(system, engine_raw)
-
-            update_free_bikes_raw(system, engine_raw)
+            
+            try:
+                update_stations_raw(system, engine_raw)
+            except Exception as e:
+                logger.info(f"***{system.name} - failed station update \n{e}")
+                
+            try:
+                update_free_bikes_raw(system, engine_raw)
+            except Exception as e:
+                logger.info(f"***{system.name} - failed free bike update \n{e}")
 
             system.tracking_end = dt.datetime.utcnow() # Last update
 
