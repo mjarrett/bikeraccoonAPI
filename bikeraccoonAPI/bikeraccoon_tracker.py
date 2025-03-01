@@ -98,6 +98,7 @@ def tracker(systems_file='systems.json',db_file='bikeraccoon.db',
             try:
                 update_stations_raw(system, engine_raw)
             except Exception as e:
+                
                 logger.info(f"***{system.name} - failed station update \n{e}")
                 
             try:

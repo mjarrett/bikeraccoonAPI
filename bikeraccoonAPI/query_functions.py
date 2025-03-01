@@ -55,6 +55,11 @@ def query_station_status(sys_url):
     
     df['datetime'] = df['datetime'].dt.tz_localize('UTC')
     
+    # This is necessary for cases where stations don't have docks (geofenced stations)
+    if 'num_docks_available' not in df.columns:
+        df['num_docks_available'] = 0
+        
+    
     df = df[['datetime','num_bikes_available','num_docks_available','is_renting','station_id']]
 
 
